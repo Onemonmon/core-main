@@ -1,10 +1,6 @@
-/**
- * Make a map and return a function for checking if a key
- * is in that map.
- * IMPORTANT: all calls of this function must be prefixed with
- * \/\*#\_\_PURE\_\_\*\/
- * So that rollup can tree-shake them if necessary.
- */
+// const example = /*#__PURE__*/ makeMap(`__proto__,__v_isRef,__isVue`)
+// makeMap(example) => { __proto__: true, __v_isRef: true, __isVue: true }
+// 最终返回一个函数，判断该值是否存在
 export function makeMap(
   str: string,
   expectsLowerCase?: boolean

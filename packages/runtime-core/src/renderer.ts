@@ -1584,6 +1584,7 @@ function baseCreateRenderer(
     const prevProps = instance.vnode.props
     instance.vnode = nextVNode
     instance.next = null
+
     updateProps(instance, nextVNode.props, prevProps, optimized)
     updateSlots(instance, nextVNode.children, optimized)
 

@@ -2,11 +2,12 @@ const DOMGlobals = ['window', 'document']
 const NodeGlobals = ['module', 'require']
 
 module.exports = {
-  parser: '@typescript-eslint/parser',
+  parser: 'vue-eslint-parser',
   parserOptions: {
-    sourceType: 'module'
+    sourceType: 'module',
+    parser: '@typescript-eslint/parser'
   },
-  plugins: ["jest"],
+  plugins: ['jest'],
   rules: {
     'no-debugger': 'error',
     'no-unused-vars': [
@@ -16,7 +17,7 @@ module.exports = {
       { varsIgnorePattern: '.*', args: 'none' }
     ],
     // most of the codebase are expected to be env agnostic
-    'no-restricted-globals': ['error', ...DOMGlobals, ...NodeGlobals],
+    'no-restricted-globals': 'off',
     // since we target ES2015 for baseline support, we need to forbid object
     // rest spread usage in destructure as it compiles into a verbose helper.
     // TS now compiles assignment spread into Object.assign() calls so that

@@ -16,11 +16,6 @@ export declare const RawSymbol: unique symbol
 
 export interface Ref<T = any> {
   value: T
-  /**
-   * Type differentiator only.
-   * We need this to be in public d.ts but don't want it to show up in IDE
-   * autocomplete, so we use a private Symbol instead.
-   */
   [RefSymbol]: true
 }
 
@@ -32,31 +27,33 @@ type RefBase<T> = {
 export function trackRefValue(ref: RefBase<any>) {
   if (shouldTrack && activeEffect) {
     ref = toRaw(ref)
-    if (__DEV__) {
-      trackEffects(ref.dep || (ref.dep = createDep()), {
-        target: ref,
-        type: TrackOpTypes.GET,
-        key: 'value'
-      })
-    } else {
-      trackEffects(ref.dep || (ref.dep = createDep()))
-    }
+    trackEffects(ref.dep || (ref.dep = createDep()))
+    // if (__DEV__) {
+    //   trackEffects(ref.dep || (ref.dep = createDep()), {
+    //     target: ref,
+    //     type: TrackOpTypes.GET,
+    //     key: 'value'
+    //   })
+    // } else {
+    //   trackEffects(ref.dep || (ref.dep = createDep()))
+    // }
   }
 }
 
 export function triggerRefValue(ref: RefBase<any>, newVal?: any) {
   ref = toRaw(ref)
   if (ref.dep) {
-    if (__DEV__) {
-      triggerEffects(ref.dep, {
-        target: ref,
-        type: TriggerOpTypes.SET,
-        key: 'value',
-        newValue: newVal
-      })
-    } else {
-      triggerEffects(ref.dep)
-    }
+    triggerEffects(ref.dep)
+    // if (__DEV__) {
+    //   triggerEffects(ref.dep, {
+    //     target: ref,
+    //     type: TriggerOpTypes.SET,
+    //     key: 'value',
+    //     newValue: newVal
+    //   })
+    // } else {
+    //   triggerEffects(ref.dep)
+    // }
   }
 }
 
@@ -87,34 +84,46 @@ export function shallowRef(value?: unknown) {
   return createRef(value, true)
 }
 
+/**
+ * ref工厂函数
+ */
 function createRef(rawValue: unknown, shallow: boolean) {
+  // 已经是ref，直接返回
   if (isRef(rawValue)) {
     return rawValue
   }
+  // 创建一个ref实例对象
   return new RefImpl(rawValue, shallow)
 }
 
+/**
+ * RefImpl
+ */
 class RefImpl<T> {
-  private _value: T
-  private _rawValue: T
-
-  public dep?: Dep = undefined
+  private _value: T // 外部获取到的数据 xx.value
+  private _rawValue: T // 原数据
+  public dep?: Dep = undefined // 依赖该ref的effects
   public readonly __v_isRef = true
 
   constructor(value: T, public readonly __v_isShallow: boolean) {
     this._rawValue = __v_isShallow ? value : toRaw(value)
+    // value是对象且不是shallow时，会自动转成reactive
     this._value = __v_isShallow ? value : toReactive(value)
   }
-
+  // xx.value
   get value() {
+    // 获取值时收集依赖
     trackRefValue(this)
     return this._value
   }
-
+  // xx.value = xxx
   set value(newVal) {
+    // 设置值（值改变了）时触发依赖
     newVal = this.__v_isShallow ? newVal : toRaw(newVal)
     if (hasChanged(newVal, this._rawValue)) {
+      // 设置原数据
       this._rawValue = newVal
+      // 设置.value的值
       this._value = this.__v_isShallow ? newVal : toReactive(newVal)
       triggerRefValue(this, newVal)
     }
@@ -141,7 +150,14 @@ const shallowUnwrapHandlers: ProxyHandler<any> = {
     }
   }
 }
-
+/**
+ * 对象里存在ref时，访问时不需要.value
+ * setup() {
+ *    const name = ref("kaka")
+ *    return { name }
+ * }
+ * 内部调用了proxyRefs，使用时直接name
+ */
 export function proxyRefs<T extends object>(
   objectWithRefs: T
 ): ShallowUnwrapRef<T> {
@@ -191,31 +207,34 @@ export function customRef<T>(factory: CustomRefFactory<T>): Ref<T> {
 export type ToRefs<T = any> = {
   [K in keyof T]: ToRef<T[K]>
 }
+
+/**
+ * toRefs将对象的所有属性值变为ref
+ * 如果object本身不是响应式的，那么转换之后虽然是ref，但也不具备响应式
+ */
 export function toRefs<T extends object>(object: T): ToRefs<T> {
-  if (__DEV__ && !isProxy(object)) {
-    console.warn(`toRefs() expects a reactive object but received a plain one.`)
-  }
+  // 建个外壳 [] {}
   const ret: any = isArray(object) ? new Array(object.length) : {}
   for (const key in object) {
     ret[key] = toRef(object, key)
   }
   return ret
 }
-
+// 类似proxy做了个代理，本身不提供响应式
 class ObjectRefImpl<T extends object, K extends keyof T> {
   public readonly __v_isRef = true
-
+  // data = {name: 'a', age: 12}
   constructor(
     private readonly _object: T,
     private readonly _key: K,
     private readonly _defaultValue?: T[K]
   ) {}
-
+  // 获取name.value其实访问的是data.name，然后data.name自己收集依赖
   get value() {
     const val = this._object[this._key]
     return val === undefined ? (this._defaultValue as T[K]) : val
   }
-
+  // 设置name.value其实就是给data.name赋值，然后触发data.name自己的依赖
   set value(newVal) {
     this._object[this._key] = newVal
   }
@@ -234,46 +253,30 @@ export function toRef<T extends object, K extends keyof T>(
   defaultValue: T[K]
 ): ToRef<Exclude<T[K], undefined>>
 
+/**
+ * toRef 将对象的某个属性值转成ref
+ */
 export function toRef<T extends object, K extends keyof T>(
   object: T,
   key: K,
   defaultValue?: T[K]
 ): ToRef<T[K]> {
+  // 获取属性值
   const val = object[key]
+  // 是ref直接返回，否则
   return isRef(val)
     ? val
     : (new ObjectRefImpl(object, key, defaultValue) as any)
 }
 
-// corner case when use narrows type
-// Ex. type RelativePath = string & { __brand: unknown }
-// RelativePath extends object -> true
 type BaseTypes = string | number | boolean
 
-/**
- * This is a special exported interface for other packages to declare
- * additional types that should bail out for ref unwrapping. For example
- * \@vue/runtime-dom can declare it like so in its d.ts:
- *
- * ``` ts
- * declare module '@vue/reactivity' {
- *   export interface RefUnwrapBailTypes {
- *     runtimeDOMBailTypes: Node | Window
- *   }
- * }
- * ```
- *
- * Note that api-extractor somehow refuses to include `declare module`
- * augmentations in its generated d.ts, so we have to manually append them
- * to the final generated d.ts in our build process.
- */
 export interface RefUnwrapBailTypes {}
 
 export type ShallowUnwrapRef<T> = {
   [K in keyof T]: T[K] extends Ref<infer V>
     ? V
-    : // if `V` is `unknown` that means it does not extend `Ref` and is undefined
-    T[K] extends Ref<infer V> | undefined
+    : T[K] extends Ref<infer V> | undefined
     ? unknown extends V
       ? undefined
       : V | undefined

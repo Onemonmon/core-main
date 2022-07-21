@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="../../dist/reactivity.global.js"></script>
+    <script>
+      const { reactive, effect } = VueReactivity
+      debugger
+      const data = reactive([1, 2, 3, 4])
+      // effect1
+      // WeakMap<{data: Map<{0: Set[effect1], 1: Set[effect1]}>}>
+      // effect1.deps = [Set[effect1], Set[effect1]]
+      effect(() => {
+        // track 0 1
+        app.innerHTML = `${data[0]},${data[1]}`
+      })
+      // effect2
+      // WeakMap<{ data: Map<{0: Set[effect1], 1: Set[effect1], length: Set[effect2]}> }>
+      // effect2.deps = [Set[effect2]]
+      effect(() => {
+        // track length
+        console.log(data.length)
+      })
+      setTimeout(() => {
+        // 1.改变数组的长度，会进入getter<length>
+        // 2.由于拦截了push方法，此时不会进行track
+        // 3.setter 4 = 5
+        // 4.trigger 4 + length 对应的effect
+        // 5.setter length = 5
+        data.push(5)
+      }, 1000)
+    </script>
+  </body>
+</html>

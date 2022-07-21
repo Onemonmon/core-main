@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="../../dist/reactivity.global.js"></script>
+    <script>
+      const { reactive, toRefs, effect } = VueReactivity
+      debugger
+      const data = reactive({ name: 'zhangsan', age: 18 })
+      /**
+       * 1.track name age 但是因为不在effect内，所以不会收集依赖
+       */
+      const { name, age } = toRefs(data)
+      /**
+       * effect1
+       * WeakMap<{data: Map{name: Set[effect1]}}>
+       */
+      effect(() => {
+        app.innerHTML = `<div>姓名：${name.value}</div>`
+      })
+      setTimeout(() => {
+        name.value = 'lisi'
+      }, 1000)
+    </script>
+  </body>
+</html>

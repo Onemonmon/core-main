@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="../../dist/reactivity.global.js"></script>
+    <script>
+      const { ref, effect } = VueReactivity
+      debugger
+      const data = ref({
+        name: 'zhangsan',
+        info: { age: 18 }
+      })
+      /**
+       * effect1
+       * data.dep = Set[effect1]
+       * WeakMap<{data.value: Map<{name: Set[effect1]}>}>
+       * effect1.deps = [Set[effect1], Set[effect1]]
+       */
+      effect(() => {
+        app.innerHTML = `<div>姓名：${data.value.name}</div>`
+      })
+      /**
+       * effect2
+       * data.dep = Set[effect1, effect2]
+       * WeakMap<{
+       *  data.value: Map<{name: Set[effect1, effect2], info: Set[effect2]}>,
+       *  info: Map<{age: Set[effect2]}>
+       * }>
+       * effect2.deps = [
+       *    Set[effect1, effect2],
+       *    Set[effect1, effect2],
+       *    Set[effect2],
+       *    Set[effect2]
+       * ]
+       */
+      effect(() => {
+        console.log(data.value.name, data.value.info.age)
+      })
+      debugger
+      setTimeout(() => {
+        // 1.get value
+        // 2.getter name
+        // 3.trigger name 对应的effect：Set[effect1, effect2]
+        data.value.name = 20
+      }, 1000)
+    </script>
+  </body>
+</html>

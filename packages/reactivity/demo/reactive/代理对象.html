@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="../../dist/reactivity.global.js"></script>
+    <script>
+      const {
+        reactive,
+        shallowReactive,
+        shallowReadonly,
+        ref,
+        shallowRef,
+        readonly,
+        effect
+      } = VueReactivity
+      debugger
+      const data = reactive({
+        name: 'zhangsan',
+        info: { age: 18 },
+        refObj: ref({ address: '深圳' })
+      })
+      effect(() => {
+        app.innerHTML = `<div>姓名：${data.name} 年龄：${data.info.age}</div>`
+      })
+      setTimeout(() => {
+        data.info.age = 20
+        // data.refObj = shallowReactive({ a: 1 })
+        // data.refObj = ref({})
+        // data.refObj = reactive({})
+        // data.refObj = {}
+        // data.refObj = shallowRef({})
+      }, 1000)
+    </script>
+  </body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="../../dist/reactivity.global.js"></script>
+    <script>
+      const { reactive, ref, computed, effect } = VueReactivity
+      const name = ref('张三')
+      const info = reactive({ age: 18 })
+      /**
+       * 在内部创建一个computedEffect
+       */
+      const data = computed(() => {
+        /**
+         * aaa为其中的变量收集依赖
+         * name.dep = Set[computedEffect]
+         * WeakMap<{info: Map<{age: Set[computedEffect]}>}>
+         */
+        return {
+          name: name.value,
+          age: info.age
+        }
+      })
+      // effect1
+      // data.dep = Set[effect1]
+      effect(() => {
+        /**
+         * 1.get data.value
+         * 2.track data.value => data.dep=Set[effect1]
+         * 3.dirty ? 调用run执行getter，并为其中的变量收集依赖
+         * 4.执行上方的aaa
+         *   track name
+         *    name.dep=Set[computedEffect]
+         *   track info.age
+         *    WeakMap<{info: Map<{age: Set[computedEffect]}>}>
+         * 5.get data.value
+         * 6.track data.value => data.dep=Set[effect1]（同一个effect所以不变）
+         * 7.dirty=false结束
+         */
+        app.innerHTML = `${data.value.name},${data.value.age}`
+      })
+      setTimeout(() => {
+        /**
+         * 1.set name.value
+         * 2.trigger name.dep=Set[computedEffect]
+         * 3.执行computedEffect的调度函数，dirty=true
+         * 4.trigger data.dep=Set[effect1]
+         * 5.setter info.age
+         * 6.trigger age: Set[computedEffect]
+         * 7.执行computedEffect的调度函数，dirty=true
+         * 8.trigger data.dep=Set[effect1]
+         */
+        name.value = '李四'
+        info.age = 20
+      }, 1000)
+    </script>
+  </body>
+</html>
